@@ -1,0 +1,10 @@
+# Not including DB
+*.db/
+user_accounts.db
+
+*.static/
+*.venv/
+*.venv
+.venv
+
+.DS_Store

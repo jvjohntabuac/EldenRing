@@ -5,7 +5,6 @@ from wtforms import StringField, PasswordField, FileField, TextAreaField
 from wtforms.validators import InputRequired, Email, Length
 import bcrypt
 import base64
-#import email_validator#not working
 from io import BytesIO
 from flask_wtf.csrf import CSRFProtect
 
@@ -89,11 +88,16 @@ def signup():
             conn.commit()
             flash('Account created successfully, please login.')
             return redirect(url_for('login'))
-        except sqlite3.IntegrityError:
-            flash('Error: That email or username already exists.')
+        except sqlite3.IntegrityError as e:
+            flash(f'Error: That email or username already exists. Details: {e}')
+            print(f'IntegrityError: {e}')
+        except sqlite3.Error as e:
+            flash(f'An unexpected error occurred: {e}')
+            print(f'SQLite Error: {e}')
         finally:
             conn.close()
     return render_template('signup.html', form=form)
+
 
 @app.route('/home')
 def home():

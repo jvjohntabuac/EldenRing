@@ -225,18 +225,45 @@ def like_post():
 
     post_id = request.form.get('post_id')
     user_id = session['user_id']
+    
+    if not post_id:
+        return jsonify({'error': 'Invalid request'}), 400
+
     conn = get_db_connection()
 
     try:
-        existing_like = conn.execute('SELECT * FROM PostLikes WHERE post_id = ? AND user_id = ?', (post_id, user_id)).fetchone()
+        # Check if the like already exists
+        existing_like = conn.execute(
+            'SELECT * FROM PostLikes WHERE post_id = ? AND user_id = ?',
+            (post_id, user_id)
+        ).fetchone()
+        
         if existing_like:
-            conn.execute('DELETE FROM PostLikes WHERE post_id = ? AND user_id = ?', (post_id, user_id))
+            # Unlike: Remove the existing like
+            conn.execute(
+                'DELETE FROM PostLikes WHERE post_id = ? AND user_id = ?',
+                (post_id, user_id)
+            )
+            action = 'removed'
         else:
-            conn.execute('INSERT INTO PostLikes (post_id, user_id) VALUES (?, ?)', (post_id, user_id))
+            # Like: Add a new like
+            conn.execute(
+                'INSERT INTO PostLikes (post_id, user_id) VALUES (?, ?)',
+                (post_id, user_id)
+            )
+            action = 'added'
+
         conn.commit()
-        like_count = conn.execute('SELECT COUNT(*) FROM PostLikes WHERE post_id = ?', (post_id,)).fetchone()[0]
-        return jsonify({'like_count': like_count})
+
+        # Get updated like count
+        like_count = conn.execute(
+            'SELECT COUNT(*) FROM PostLikes WHERE post_id = ?',
+            (post_id,)
+        ).fetchone()[0]
+
+        return jsonify({'like_count': like_count, 'action': action})
     except sqlite3.Error as e:
+        conn.rollback()
         return jsonify({'error': str(e)}), 500
     finally:
         conn.close()
